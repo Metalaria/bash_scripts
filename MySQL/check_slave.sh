@@ -56,8 +56,8 @@ if [ "$?" -ne "1" ]; then
         #       $status
                 check_status_slave2
                 if [ "$?" -ne "1" ]; then
-                        ssh root@172.18.158.164 mysql --login-path=root -e "CHANGE MASTER TO MASTER_HOST='172.18.158.171',MASTER_DELAY=300,MASTER_USER='secondary', MASTER_PASSWORD='password', MASTER_PORT=3306, MASTER_LOG_FILE='$binlog_file', MASTER_LOG_POS=$position;"
-                        ssh root@172.18.158.164 mysql --login-path=root -e "start slave;"
+                        ssh root@<ip> mysql --login-path=root -e "CHANGE MASTER TO MASTER_HOST='<ip>',MASTER_DELAY=300,MASTER_USER='secondary', MASTER_PASSWORD='password', MASTER_PORT=3306, MASTER_LOG_FILE='$binlog_file', MASTER_LOG_POS=$position;"
+                        ssh root@<ip> mysql --login-path=root -e "start slave;"
                         #$status
                         check_status_slave2
                         if [ "$?" -ne "1" ]; then
@@ -82,13 +82,13 @@ check_main_slave
 if [ "$?" -ne "1" ]; then
         echo $DATE "Fallo en la replicación en el esclavo principal" >> $LOG 2>&1
         echo $DATE "Intendo solucionar el problema en el esclavo principal..." >> $LOG 2>&1
-        ssh root@172.18.158.167 service mysql restart
+        ssh root@<ip> service mysql restart
         if [ "$?" -ne "1" ]; then
         #       $status
                 check_main_slave
                 if [ "$?" -ne "1" ]; then
-                        ssh root@172.18.158.167 mysql --login-path -e "CHANGE MASTER TO MASTER_HOST='172.18.158.171', MASTER_USER='replication_user',MASTER_PASSWORD='slave', MASTER_PORT=3306, MASTER_LOG_FILE='$binlog_file', MASTER_LOG_POS=$position;"
-                        ssh root@172.18.158.167 mysql --login-path=root -e "start slave;"
+                        ssh root@<ip> mysql --login-path -e "CHANGE MASTER TO MASTER_HOST='<ip>', MASTER_USER='replication_user',MASTER_PASSWORD='slave', MASTER_PORT=3306, MASTER_LOG_FILE='$binlog_file', MASTER_LOG_POS=$position;"
+                        ssh root@<ip> mysql --login-path=root -e "start slave;"
                         #$status
                         check_main_slave
                         if [ "$?" -ne "1" ]; then
