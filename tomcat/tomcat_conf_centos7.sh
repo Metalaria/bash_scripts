@@ -2,7 +2,7 @@
 #Version 1
 #Fecha: 07/10/2015
 #Autor: Gonzalo Mejias Moreno
-#Descripción: El script configura el servidor Tomcat según las especificaciones de telefónica soluciones
+#Descripción: El script configura el servidor Tomcat en centos 7 redhat 7
 
 #copia de seguridad del los archivo de configuración $DATEes
 backup_conf_files() {
