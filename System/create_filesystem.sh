@@ -10,9 +10,9 @@ for i in `ls -1 /sys/class/scsi_host/ | awk -F 'host' '{ print $2 }'`; do
 done
 
 #Estas variables buscan los discos que tiene la máquina pero que no tienen ninguna partición ni ningún tipo de formato
-disk_one=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | head -n 1 | tr -d ' '`
-disk_two=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | sed -n '2p' | tr -d ' '`
-disk_three=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | head -n 3 | grep -v "$disk_one" | grep -v "$disk_two" | tr -d ' '`
+disk_one=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '1p' | tr -d ' '`
+disk_two=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '2p' | tr -d ' '`
+disk_three=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '2p' | tr -d ' '`
 
 part_number=1
 
