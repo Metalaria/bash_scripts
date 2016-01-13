@@ -3,17 +3,9 @@
 #Fecha: 13/01/2016
 #Autor: Gonzalo Mejías Moreno
 
-########### TO DO #############
-# * Unificar funciones para optimizar
-# * Buscar manera de coger los discos nuevos de manera dinámica
-###############################
-
 echo $1
-	
-# cat /proc/partitions | cut -d " " -f16 | sed '/^$/d'
-# lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d'
-# lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | head -n 1
-	
+
+#Estas variables buscan los discos que tiene la máquina pero que no tienen ninguna partición ni ningún tipo de formato
 disk_one=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | head -n 1 | tr -d ' '`
 disk_two=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | sed -n '2p' | tr -d ' '`
 disk_three=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | head -n 3 | grep -v "$disk_one" | grep -v "$disk_two" | tr -d ' '`
