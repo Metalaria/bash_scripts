@@ -4,6 +4,10 @@
 #Autor: Gonzalo Mejías Moreno
 
 echo $1
+#Este bucle reescanea el bus scsci en busca de los nuevos discos, para permitir 
+for i in `ls -1 /sys/class/scsi_host/ | awk -F 'host' '{ print $2 }'`; do 
+                echo "- - -" > /sys/class/scsi_host/host${i}/scan
+done
 
 #Estas variables buscan los discos que tiene la máquina pero que no tienen ninguna partición ni ningún tipo de formato
 disk_one=`lsblk -fs | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v vg* | grep -v sda | grep -v "NAME" | grep -v "sr0" | head -n 1 | tr -d ' '`
