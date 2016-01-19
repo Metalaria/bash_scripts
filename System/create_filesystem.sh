@@ -3,7 +3,7 @@
 #Fecha: 19/01/2016
 #Autor: Gonzalo Mejías Moreno
 
-#Este script sirve para reconocer y dar formato en caliente a los discos duros sin uso de una máquina en una MV en WMware.
+#Este script sirve para reconocer y dar formato en caliente a los discos duros sin uso de una máquina virtual en WMware.
 #Busca en todos los discos de la máquina y filtra el de sistema (el sda normalmente) y aquellos discos que ya tengan una partición.
 #Para ello pregunta si va a usar LVM o no y en función de ello realiza una acción y otra.
 #Si se selecciona partición pregunta a su vez si se quiere crean un volumegroup con más de un disco duro
