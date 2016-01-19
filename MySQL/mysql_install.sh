@@ -1,6 +1,6 @@
 #!/bin/sh
 # USO: sudo ./mysqlinstall.sh
-# Es neseario el ejecutar el script (./mysqlsetup.sh) después de instalar
+# Es neseario el ejecutar el script (./mysql_setup.sh) después de instalar
 
 # guardamos el directorio actual
 original_working_directory=${PWD}
