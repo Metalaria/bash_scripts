@@ -18,8 +18,8 @@ disks=(`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/
 
 declare -a empty_array_of_disk=( )
 
-for ((i=1;i<=3;i++)); do
-	insert="/dev/"${array_of_disk[$i-1]}
+for ((j=1;j<=3;j++)); do
+	insert="/dev/"${disks[$j-1]}
 	empty_array_of_disk+=($insert)
 done
 	
