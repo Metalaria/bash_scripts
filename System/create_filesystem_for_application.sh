@@ -1,6 +1,6 @@
 #!/bin/bash
-#Version 3
-#Fecha: 13/01/2016
+#Version 4
+#Fecha: 20/01/2016
 #Autor: Gonzalo Mejías Moreno
 
 echo $1
@@ -10,22 +10,31 @@ for i in `ls -1 /sys/class/scsi_host/ | awk -F 'host' '{ print $2 }'`; do
 done
 
 #Estas variables buscan los discos que tiene la máquina pero que no tienen ninguna partición ni ningún tipo de formato
-disk_one=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '1p' | tr -d ' '`
-disk_two=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '2p' | tr -d ' '`
-disk_three=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '2p' | tr -d ' '`
+#disk_one=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '1p' | tr -d ' '`
+#disk_two=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '2p' | tr -d ' '`
+#disk_three=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '2p' | tr -d ' '`
 
+disks=(`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | grep -v '[0-9]' | tr -d ' '`)
+
+declare -a empty_array_of_disk=( )
+
+for ((i=1;i<=3;i++)); do
+	insert="/dev/"${array_of_disk[$i-1]}
+	empty_array_of_disk+=($insert)
+done
+	
 part_number=1
 
 create_disk_apache(){
 		#creamos la partición en el disco
-        (echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_one
-		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_two
+(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[1]}
 		#creamos el volumen en el primer disco
-        pvcreate /dev/$disk_one$part_number | tr -d ' '
-		pvcreate /dev/$disk_two$part_number | tr -d ' '
+        pvcreate /dev/${empty_array_of_disk[0]}$part_number | tr -d ' '
+		pvcreate /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
         #creamos el volumegroup
-        vgcreate apache /dev/$disk_one$part_number | tr -d ' '
-		vgcreate logs_apache /dev/$disk_two$part_number | tr -d ' '
+        vgcreate apache /dev/${empty_array_of_disk[0]}$part_number | tr -d ' '
+		vgcreate logs_apache /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
         #Asignamos el tamaño total
         lvcreate -l100%FREE -n lv_apache01 apache
 		lvcreate -l100%FREE -n lv_logs_apache01 logs_apache
@@ -45,14 +54,14 @@ create_disk_apache(){
 
 create_disk_tomcat(){
 		#creamos la partición en el disco
-        (echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_one
-		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_two
+        (echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
 		#creamos el volumen en el primer disco
-        pvcreate /dev/$disk_one$part_number|tr -d ' '
-		pvcreate /dev/$disk_two$part_number | tr -d ' '
+        pvcreate /dev/${empty_array_of_disk[0]}$part_number|tr -d ' '
+		pvcreate /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
         #creamos el volumegroup
-        vgcreate tomcat /dev/$disk_one$part_number|tr -d ' '
-		vgcreate logs_tomcat /dev/$disk_two$part_number | tr -d ' '
+        vgcreate tomcat /dev/${empty_array_of_disk[0]}$part_number|tr -d ' '
+		vgcreate logs_tomcat /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
         #Asignamos el tamaño total
         lvcreate -l100%FREE -n lv_tomcat01 tomcat
 		lvcreate -l100%FREE -n lv_logs_tomcat01 logs_tomcat
@@ -72,17 +81,17 @@ create_disk_tomcat(){
 
 create_disk_mysql(){
 		#creamos la partición en el disco
-        (echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_one
-		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_two
-		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/$disk_three
+        (echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[1]}
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[2]}
 		#creamos el volumen en el primer disco
-        pvcreate /dev/$disk_one$part_number|tr -d ' '
-		pvcreate /dev/$disk_two$part_number | tr -d ' '
-		pvcreate /dev/$disk_three$part_number | tr -d ' '
+        pvcreate ${empty_array_of_disk[0]}$part_number|tr -d ' '
+		pvcreate ${empty_array_of_disk[1]}$part_number | tr -d ' '
+		pvcreate ${empty_array_of_disk[2]}$part_number | tr -d ' '
         #creamos el volumegroup
-        vgcreate mysql /dev/$disk_one$part_number|tr -d ' '
-		vgcreate logs_mysql /dev/$disk_two$part_number | tr -d ' '
-		vgcreate backup_mysql /dev/$disk_three$part_number | tr -d ' '
+        vgcreate mysql ${empty_array_of_disk[0]}$part_number|tr -d ' '
+		vgcreate logs_mysql ${empty_array_of_disk[1]}$part_number | tr -d ' '
+		vgcreate backup_mysql ${empty_array_of_disk[2]}$part_number | tr -d ' '
         #Asignamos el tamaño total
         lvcreate -l100%FREE -n lv_mysql01 mysql
 		lvcreate -l100%FREE -n lv_logs_mysql01 logs_mysql
