@@ -2,13 +2,13 @@
 
 # Copyright Rimuhosting.com
 
-DEFAULTINSTALLTARGET="/usr/local/jboss"
+DEFAULTINSTALLTARGET="/servicios/jboss"
 INSTALLTARGET=
 INITSCRIPT="/etc/init.d/jboss"
 JBOSSURL="http://download.jboss.org/jbossas/7.1/jboss-as-7.1.1.Final/jboss-as-7.1.1.Final.tar.gz"
 MYSQLCONNECTORURL="http://d.ri.mu/mysql-connector-java-5.1.18-bin.jar"
 
-# default values
+# Valores por defecto
 ERRORMSG=
 MVDIRSTAMP="old.$(date +%s)"
 MVDIRNAME=
@@ -17,32 +17,19 @@ NOJAVA="n"
 RUNONSTARTUP="n"
 MYSQLCONNECTOR="n"
 
-
-
-
-###
-# Function: usage
-# Handy function to tell users whats what
-# TODO: add boilerplate?
-#
-function usage {
-  echo " Usage: $0 [--noprompt]
-      [--installtarget <folder>] [--skip-java]
+# Imprime lo que hace el script
+function uso {
+  echo " Uso: $0 [--noprompt]
+      [--installtarget <carpeta>] [--skip-java]
       [--mysqlconnector]
       [--runonstartup]
-  Option notes:
-  --noprompt      makes safe assumptions and runs without user interaction
-  --installtarget optional install location (default is $DEFAULTINSTALLTARGET)
+  Notas opcionales:
+  --noprompt      Totalmente automático, sin interacción
+  --installtarget Si quieres cambiar el directorio de instación (por defecto $DEFAULTINSTALLTARGET)
 "
 }
 
-
-###
-# Function: parsecommandline
-# Take parameters as given on command line and set those up so we can do
-# cooler stuff, or complain that nothing will work. Set some reasonable
-# defaults so we dont have to type so much.
-#
+# Coge los parámetros de entrada 
 function parsecommandline {
   while [ -n "$1" ]; do
     PARAM=$1
@@ -53,11 +40,11 @@ function parsecommandline {
     --installtarget)
       shift
       if [[ -e "$1" && ! -d "$1" ]]; then
-        ERRORMSG="target already $1 exists but is not a folder"
+        ERRORMSG="El objetivo $1 eya existe pero no es un directorio"
         return 1
       fi
       if [[ $(echo $1 | grep ^/ ) == "0" ]]; then
-        ERRORMSG="please pass in --installtarget as an absolute folder (eg: $DEFAULTINSTALLTARGET, gave $1)"
+        ERRORMSG="--installtarget debe ser una ruta absoluta"
         return 1
       fi
       INSTALLTARGET="$1"
@@ -72,11 +59,11 @@ function parsecommandline {
       MYSQLCONNECTOR="y"
       ;;
     -h|help|-help|--help|?|-?|--?)
-      usage
+      uso
       exit 1;
       ;;
     *)
-      ERRORMSG="unrecognised paramter '$PARAM'"
+      ERRORMSG="Parámetro no válido '$PARAM'"
       return 1;
       ;;
     esac
@@ -85,107 +72,91 @@ function parsecommandline {
 
   INSTALLTARGET=${INSTALLTARGET:-$DEFAULTINSTALLTARGET}
 
-  
-
-  # detect distro and release
+  # detecta el sistema operativo y su versión
   if [ -e /etc/redhat-release ]; then
       DISTRO=( `grep release /etc/redhat-release | awk '{print $1}'` )
       RELEASE=( `grep release /etc/redhat-release | awk '{print $3}' | cut -d. -f1` )
   elif [ -e /etc/debian_version ]; then
       if ( ! which lsb_release >/dev/null ); then
-          echo "  ...installing 'lsb_release' command"
+          echo "  ...instalando 'lsb_release' command"
           apt-get -y -qq install lsb-release  >> /dev/null 2>&1
           if [[ $? -ne 0 ]]; then echo "Error: installing lsb_release package failed"; exit 1; fi
       fi
       DISTRO=$( lsb_release -is )
       RELEASE=$( lsb_release -cs )
   else
-      echo "! Running on unknown distro, some features may not work as expected"
+      echo "No se reconoce la distro , es posible que algunas funciones no funcionen"
   fi
-  [[ -z "$DISTRO" ]] && echo "! Warning: Was not able to identify distribution"
-  [[ -z "$RELEASE" ]] && echo "! Warning: Was not able to identify release"
+  [[ -z "$DISTRO" ]] && echo "! Warning: No se ha detectado la distro"
+  [[ -z "$RELEASE" ]] && echo "! Warning: No se ha identificado la versión"
   
   return 0
 
 }
 
-
-###
-# Function: installreqs
-# Make sure any essential components need for this script or the jboss install are available
-#
+# Comprueba que los componentes necesarios para el funcionamiento de jboss están instalados
 function installreqs {
-  echo "* Verifying installation requirements"
+  echo "* Comprobando los requisitos de instalación"
   if [[ $(id -u) != "0" ]] ; then
-    ERRORMSG="You should be root to run this (e.g. sudo $0 $* ) "
+    ERRORMSG="Es necesario ejecutarlo como root (sudo $0 $* ) "
     return 1
   fi
 
-  echo "  ...checking for existing jboss installations"
+  echo "  ...Comprobando si hay algún jboss ya instalado"
   if [[ -d $INSTALLTARGET && $(ls -1 "$INSTALLTARGET" | wc -l) != 0 ]]; then
-    # only care if folder is non-empty
+    
     if [[ -z $NOPROMPT ]]; then
-      echo "! Target $INSTALLTARGET exists, press Ctrl-C to quit or Enter to continue and backup those files... "
+      echo " La carpeta $INSTALLTARGET ya existe, Ctrl-C para salir o Enter para continuar y hacer un backup de esos archivos... "
       read -s
     else
-      ERRORMSG="$INSTALLTARGET not empty, called with --noprompt so aborting to avoid making a mess"
+      ERRORMSG="$INSTALLTARGET no está vacío, --noprompt, la ejecución del script se detiene"
       return 1
     fi
   fi
 
-  # TODO add java presence install
   [[ -e /etc/profile.d/java.sh ]] && source /etc/profile.d/java.sh
   if [[ ! $(which java 2>/dev/null) ]]; then
     if [ "$NOJAVA" = "y" ]; then
-      ERRORMSG="java not found in the system path, install that before proceeding?"
-      return 1
+      ERRORMSG="No se ha encontrado java"
+      exit 1
     fi
-    wget -q http://downloads.rimuhosting.com/installjava.sh
-    bash installjava.sh
-    rm -f installjava.sh
   fi
 
 }
 
-
-
-###
-# Function: installjboss
 # Actually do the jboss package install
-#
 function installjboss {
-  echo "* Installing JBoss"
+  echo "* Instalando jboss"
 
-  # remove existing (old or conflicting) init scripts to backup location
+  # Mueve los scripts de inicio antiguos a un directorio de backup
   MVDIRNAME="$INSTALLTARGET.$MVDIRSTAMP"
   jbossscripts=`find /etc/init.d/ | xargs grep -c $INSTALLTARGET | grep -v ":0$" | cut -d: -f1`
   if [ ! -z "$jbossscripts" ]; then
     for i in $jbossscripts; do
-      echo "  ...attempting to stop existing jboss instance managed by $i to avoid conflicts"
+      echo "  ...instentando parar la instancia actual de jboss controlada por $i"
       $i stop  >> /dev/null 2>&1
       sleep 1
       if [[ $($i status | grep -c 'PIDs') > 0 ]]; then
-        ERRORMSG="jboss not stopped cleanly, this should not happen (BUG)"
+        ERRORMSG="jboss no se ha detenido correctamente"
         return 1
       fi
     done
       if [ "$(ps aux | grep -c "^jboss")" -ne "0" ]; then
-	ERRORMSG="user jboss still has processes running"
+	ERRORMSG="usuario jboss todavía tiene un proceso corriendo"
 	return 1
       fi
     for i in $jbossscripts; do
-      echo "  ...init script $i moved to $(dirname $INSTALLTARGET)/$(basename $i).$MVDIRSTAMP.init"
+      echo "  ...init script $i movido a $(dirname $INSTALLTARGET)/$(basename $i).$MVDIRSTAMP.init"
       mv $i "$(dirname $INSTALLTARGET)/$(basename $i).$MVDIRSTAMP.init"
     done
   fi
 
-  # move old jboss installs out of the way with a datestamp
   if [ -e $INSTALLTARGET ]; then
-    echo "  ...found $INSTALLTARGET, backing up directory to $MVDIRNAME"
+    echo "  ...encontrado $INSTALLTARGET, haciendo un backup del directorio a $MVDIRNAME"
     mv "$INSTALLTARGET" "$MVDIRNAME"
   fi
 
-  #####NEW INIT SCRIPT	
+  #Nuevo script de inicio	
   echo <<INITSCRIPTEOF >$INITSCRIPT '
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -236,7 +207,7 @@ case "$1" in
 	do_start
     ;;
     *)
-        echo "Usage: /etc/init.d/jboss {start|stop|restart}"
+        echo "uso: /etc/init.d/jboss {start|stop|restart}"
         exit 1
     ;;
 esac
@@ -246,76 +217,69 @@ INITSCRIPTEOF
 
   chmod +x $INITSCRIPT
 
-  # make sure the init script is pointing at the right place
+  # Nos aseguramos que el script de inicio apunta al sitio correcto
   if [[ "$INSTALLTARGET" != "$DEFAULTINSTALLTARGET" ]]; then
     sed -i "s/JBOSS_HOME=$DEFAULTINSTALLTARGET/JBOSS_HOME=$INSTALLTARGET/" $INITSCRIPT
   fi
 
-  echo "  ...installing JBoss package to $INSTALLTARGET"
+  echo "  ...Instalando el paquete de jboss en $INSTALLTARGET"
   installtop=$(dirname $INSTALLTARGET)
   cd $installtop
   wget --quiet -O - "$JBOSSURL" | tar xz
-  if [ $? -ne 0 ]; then ERRORMSG="failed downloading or uncompressing jboss package"; return 1; fi
+  if [ $? -ne 0 ]; then ERRORMSG="fallo en la descarga o al descomprimir el paquete"; return 1; fi
   mv "$installtop"/jboss-as-7* "$INSTALLTARGET"
 
  echo
 
-  # create jboss user and group if they do not exist
+  # creamos el usuario y grupo jboss si no existían antes
   if [[ $(id jboss 2>&1 | grep -c "No such user") -gt "0" ]]; then
-    echo "  ...configuring service user and group"
+    echo "  ...configurando usuario y grupo"
     if [[ $DISTRO == "Debian" || $DISTRO == "Ubuntu" ]]; then
       adduser --system --group jboss --home $INSTALLTARGET >> /dev/null 2>&1
     elif [[ $DISTRO == "CentOS" || $DISTRO == "RHEL" || $DISTRO == "Fedora" ]]; then
       groupadd -r -f jboss  >> /dev/null 2>&1
       useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
     else
-      echo "Warning: Distribution not recognised, you may need to configure the"
-      echo "         jboss user and group manually. Attempting to perform this"
-      echo "         anyway"
+      echo "Warning: Distro no reconocida"
       groupadd jboss  >> /dev/null 2>&1
       useradd -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
     fi
   fi
   if [[ $(id jboss 2>&1 | grep -c "No such user") -gt 0 ]]; then
-    ERRORMSG="failed adding jboss user, bailing. Check your system?"
+    ERRORMSG="fallo al crear el usuario jboss"
     return 1
   fi
 
   chown -R jboss:jboss $INSTALLTARGET
 
-  # override default memory settings
-
-
-  # logs config
-
-  # set jboss running on startup if needed/wanted
+  # configuración de logs
+  # configura el servicio para que se inicie en el arranque de la máquina si se quieres
 
     if [ -z "$NOPROMPT" ] && [ $RUNONSTARTUP = "n"  ]; then
-      echo -n "  Make jboss run on startup? [y/n] "
+      echo -n "  Hacer que jboss se inicie en el arranque de la máquina? [y/n] "
       read RUNONSTARTUP
       while echo $RUNONSTARTUP | grep -qv '^y$\|^n$' ; do
-	echo -n "  Make jboss run on startup? [y/n] "
+	echo -n "  Hacer que jboss se inicie en el arranque de la máquina? [y/n] "
         read RUNONSTARTUP
       done
     fi
     
     if [ "$RUNONSTARTUP" = "y" ]; then
-      # make jboss start on startup
-      echo "  ...setting jboss to run on system startup"
+      # Hacer que jboss se inicie en el arranque de la máquina
+      echo "  ...Haciendo que jboss se inicie en el arranque de la máquina"
     	if [ -e /etc/debian_version ]; then
 	  update-rc.d jboss defaults
         else
           chkconfig --add jboss
         fi
     fi
-    # disable jmx remote access
-    echo "  ...securing JBoss, disabling JMX remote access"
+    # Deshabilita el acceso remoto por JMX
+    echo "  ...Deshabilitando el acceso remoto por JMX"
     sed -i 's|\(<remoting-connector/>\)|<!-- \1 -->|g' $INSTALLTARGET/standalone/configuration/standalone.xml 
 }
 
-
 function installmysqlconnector {
-    echo "  ...installing the mysql connector"
+    echo "  ...Instalando el conector de mysql"
     local MYSQLCONNECTORTARGETDIR="$INSTALLTARGET/modules/com/mysql/main"
     mkdir -p $MYSQLCONNECTORTARGETDIR
     cd $MYSQLCONNECTORTARGETDIR
@@ -336,12 +300,12 @@ EOFMODULE
 
     sed -i 's/mysql-connector-java.*-bin\.jar/'$(basename $(echo $MYSQLCONNECTORURL | sed 's|^http:/||g'))'/g' $MYSQLCONNECTORTARGETDIR/module.xml
 
-    echo "  ...adding the mysql connector driver to the jboss configuration"
+    echo "  ...Añadiendo el conector de mysql al connector driver de jboss"
     sed -i 's|\(<drivers>\)|\1\n\t\t<driver name="mysql" module="com.mysql"/>|g' $INSTALLTARGET/standalone/configuration/standalone.xml
 
     echo ""
-    echo "   To add a datasource to an specific database (in uppercase what needs tunning),"
-    echo "   you can add the following in the datasources element at the configuration file:"
+    echo "   Para agregar un origen de datos a una base de datos específica (en mayúsculas lo que necesita TUNNING),"
+    echo "   Puedes añadir lo siguiente en los datasources elements en el fichero de configuración:"
     echo "   $INSTALLTARGET/standalone/configuration/standalone.xml"
     echo <<EOFDATASOURCEHELP '
 <datasource
@@ -372,7 +336,7 @@ EOFMODULE
 '
 EOFDATASOURCEHELP
    
-    #adjust the permisions once more just in case
+    #Asiganmos los permisos de nuevo por si acaso
     chown -R jboss: $INSTALLTARGET
     return 0
 }
@@ -380,8 +344,8 @@ EOFDATASOURCEHELP
 parsecommandline $*
 if [[ $? -ne 0 ]]; then
   echo
-  usage
-  echo "! Error from postinstall: $ERRORMSG"
+  uso
+  echo "! Error después de la instalación: $ERRORMSG"
   echo
   exit 1
 fi
@@ -389,7 +353,7 @@ fi
 installreqs
 if [[ $? -ne 0 ]]; then
   echo
-  echo "! Error from requirements: $ERRORMSG"
+  echo "! Error en los requisitos de la máquina: $ERRORMSG"
   echo
   exit 1
 fi
@@ -397,16 +361,16 @@ fi
 installjboss
 if [[ $? -ne 0 ]]; then
   echo
-  echo "! Error from install: $ERRORMSG"
+  echo "! Error en la instalación: $ERRORMSG"
   echo
   exit 1
 fi
 
 if [ -z "$NOPROMPT" ] && [ $MYSQLCONNECTOR = "n" ]; then
-  echo -n "  Install the mysql connector? [y/n] "
+  echo -n "  Instalar el conector de mysql? [y/n] "
     read MYSQLCONNECTOR
       while echo $MYSQLCONNECTOR | grep -qv '^y$\|^n$' ; do
-	echo -n "  Install the mysql connector? [y/n] "
+	echo -n "  Instalar el conector de mysql? [y/n] "
         read MYSQLCONNECTOR
       done
 fi
@@ -417,18 +381,17 @@ fi
  
 
 
-echo -n "* Make sure the service is running"
+echo -n "* Comprobamos que el servicio está corriendo"
 $INITSCRIPT restart >> /dev/null 2>&1
 sleep 5
 if [ "$(ps aux | grep -c "^jboss")" -eq "0" ] ; then
   echo "failed"
-  echo "! Error: jboss not started cleanly, this should not happen. Check your install"
+  echo "! Error: jboss no ha arracado correctamente"
 else
   echo "ok"
-  echo "* JBoss is now installed and should be visible on http://127.0.0.1:8080"
+  echo "* JBoss jboss instalado correctamente http://127.0.0.1:8080"
   echo 
-  echo "You may want to disable the management interfaces, for more information:"
-  echo "https://docs.jboss.org/author/display/AS71/Securing+the+Management+Interfaces"
 fi
 
+exit 0
 # EOF
