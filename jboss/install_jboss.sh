@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Copyright Rimuhosting.com
 
 DEFAULTINSTALLTARGET="/servicios/jboss"
 INSTALLTARGET=
