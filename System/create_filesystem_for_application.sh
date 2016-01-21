@@ -1,13 +1,14 @@
 #!/bin/bash
-#Version 4
-#Fecha: 20/01/2016
+#Version 5
+#Fecha: 21/01/2016
 #Autor: Gonzalo Mejías Moreno
 
 echo $1
-#Este bucle reescanea el bus scsci en busca de los nuevos discos, para permitir 
+
 for i in `ls -1 /sys/class/scsi_host/ | awk -F 'host' '{ print $2 }'`; do 
-                echo "- - -" > /sys/class/scsi_host/host${i}/scan
+    echo "- - -" > /sys/class/scsi_host/host${i}/scan
 done
+	
 
 #Estas variables buscan los discos que tiene la máquina pero que no tienen ninguna partición ni ningún tipo de formato
 #disk_one=`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/^$/d' | sed -n '1p' | tr -d ' '`
@@ -18,23 +19,23 @@ disks=(`lsblk -nfs | grep "^sd" | grep -v "^sda" | cut -d " " -f1,2,3,4 | sed '/
 
 declare -a empty_array_of_disk=( )
 
-for ((j=1;j<=3;j++)); do
-	insert="/dev/"${disks[$j-1]}
+for ((i=1;i<=3;i++)); do
+	insert="/dev/"${disk[$i-1]}
 	empty_array_of_disk+=($insert)
 done
-	
+
 part_number=1
 
 create_disk_apache(){
 		#creamos la partición en el disco
-(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
 		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[1]}
 		#creamos el volumen en el primer disco
-        pvcreate /dev/${empty_array_of_disk[0]}$part_number | tr -d ' '
-		pvcreate /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
+        pvcreate ${empty_array_of_disk[0]}$part_number | tr -d ' '
+		pvcreate ${empty_array_of_disk[1]}$part_number | tr -d ' '
         #creamos el volumegroup
-        vgcreate apache /dev/${empty_array_of_disk[0]}$part_number | tr -d ' '
-		vgcreate logs_apache /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
+        vgcreate apache ${empty_array_of_disk[0]}$part_number | tr -d ' '
+		vgcreate logs_apache ${empty_array_of_disk[1]}$part_number | tr -d ' '
         #Asignamos el tamaño total
         lvcreate -l100%FREE -n lv_apache01 apache
 		lvcreate -l100%FREE -n lv_logs_apache01 logs_apache
@@ -57,11 +58,11 @@ create_disk_tomcat(){
         (echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
 		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
 		#creamos el volumen en el primer disco
-        pvcreate /dev/${empty_array_of_disk[0]}$part_number|tr -d ' '
-		pvcreate /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
+        pvcreate ${empty_array_of_disk[0]}$part_number|tr -d ' '
+		pvcreate ${empty_array_of_disk[1]}$part_number | tr -d ' '
         #creamos el volumegroup
-        vgcreate tomcat /dev/${empty_array_of_disk[0]}$part_number|tr -d ' '
-		vgcreate logs_tomcat /dev/${empty_array_of_disk[1]}$part_number | tr -d ' '
+        vgcreate tomcat ${empty_array_of_disk[0]}$part_number|tr -d ' '
+		vgcreate logs_tomcat ${empty_array_of_disk[1]}$part_number | tr -d ' '
         #Asignamos el tamaño total
         lvcreate -l100%FREE -n lv_tomcat01 tomcat
 		lvcreate -l100%FREE -n lv_logs_tomcat01 logs_tomcat
@@ -112,29 +113,61 @@ create_disk_mysql(){
 		mount -a
 }
 
+create_disks_jboss(){
+		#creamos la partición en el disco
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[0]}
+		(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk ${empty_array_of_disk[1]}
+		#creamos el volumen en el primer disco
+        pvcreate ${empty_array_of_disk[0]}$part_number | tr -d ' '
+		pvcreate ${empty_array_of_disk[1]}$part_number | tr -d ' '
+        #creamos el volumegroup
+        vgcreate jboss ${empty_array_of_disk[0]}$part_number | tr -d ' '
+		vgcreate logs_jboss ${empty_array_of_disk[1]}$part_number | tr -d ' '
+        #Asignamos el tamaño total
+        lvcreate -l100%FREE -n lv_jboss01 jboss
+		lvcreate -l100%FREE -n lv_logs_jboss01 logs_jboss
+		#Damos formato al disco	
+		mkfs.xfs /dev/jboss/lv_jboss01
+		mkfs.xfs /dev/logs_jboss/lv_logs_jboss01
+		#Creamos el punto de montaje
+		mkdir -p /servicios/jboss
+		mkdir -p /logs/jboss
+		#Añadimos los nuevos puntos de montaje al archivo fstab
+		echo "/dev/jboss/lv_jboss01 /servicios/jboss    xfs     defaults        1 2" >> /etc/fstab
+		echo "/dev/logs_jboss/lv_logs_jboss01 /logs/jboss    xfs     defaults        1 2" >> /etc/fstab
+		#Montamos el nuevo volumen
+		mount -a
+}
 
 case $1 in
 	"apache")
 		echo "apache"
-		create_disk_apache
+		create_disk_apache >> create_filesystem.log
 		lsblk -f
 		df -Th
 		exit 0
 	;;
 	"tomcat")
-		create_disk_tomcat
+		create_disk_tomcat >> create_filesystem.log
 		lsblk -f
 		df -Th
 		exit 0
 	;;
 	"mysql")
-		create_disk_mysql
+		create_disk_mysql >> create_filesystem.log
 		lsblk -f
 		df -Th
 		exit 0
 	;;
+	"jboss")
+		create_disks_jboss >> create_filesystem.log
+		lsblk -f
+		df -Th
+		exit 0
+	;;	
 	*)
 		echo "Opción no válida"
+		echo "Las opciones son apache, tomcat, mysql y jboss"
 		exit 1
 	;;
 	esac
