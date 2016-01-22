@@ -82,7 +82,7 @@ function parsecommandline {
           if [[ $? -ne 0 ]]; then echo "Error: installing lsb_release package failed"; exit 1; fi
       fi
       DISTRO=$( lsb_release -is )
-      RELEASE=$( lsb_release -cs )
+      RELEASE=$( lsb_release -rs )
   else
       echo "No se reconoce la distro , es posible que algunas funciones no funcionen"
   fi
