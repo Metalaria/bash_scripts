@@ -5,7 +5,7 @@ DEFAULTINSTALLTARGET="/servicios/jboss"
 INSTALLTARGET=
 INITSCRIPT="/etc/init.d/jboss"
 JBOSSURL="http://download.jboss.org/jbossas/7.1/jboss-as-7.1.1.Final/jboss-as-7.1.1.Final.tar.gz"
-MYSQLCONNECTORURL="http://d.ri.mu/mysql-connector-java-5.1.18-bin.jar"
+MYSQLCONNECTORURL="https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.38.tar.gz"
 
 # Valores por defecto
 ERRORMSG=
@@ -285,7 +285,7 @@ function installmysqlconnector {
     local MYSQLCONNECTORTARGETDIR="$INSTALLTARGET/modules/com/mysql/main"
     mkdir -p $MYSQLCONNECTORTARGETDIR
     cd $MYSQLCONNECTORTARGETDIR
-    wget --quiet $MYSQLCONNECTORURL
+    wget --quiet $MYSQLCONNECTORURL | tar xz
     echo <<EOFMODULE >$MYSQLCONNECTORTARGETDIR/module.xml '
 <?xml version="1.0" encoding="UTF-8"?>
  
