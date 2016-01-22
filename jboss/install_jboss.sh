@@ -249,7 +249,8 @@ INITSCRIPTEOF
     return 1
   fi
 
-  chown -R jboss:jboss $INSTALLTARGET
+  chown -R jboss $INSTALLTARGET
+  chgrp -R -R jboss $INSTALLTARGET
 
   # configuración de logs
   # configura el servicio para que se inicie en el arranque de la máquina si se quieres
