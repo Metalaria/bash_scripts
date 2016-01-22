@@ -74,7 +74,7 @@ function parsecommandline {
   # detecta el sistema operativo y su versión
   if [ -e /etc/redhat-release ]; then
       DISTRO=( `grep release /etc/redhat-release | awk '{print $1}'` )
-      RELEASE=( `grep release /etc/redhat-release | awk '{print $3}' | cut -d. -f1` )
+      RELEASE=( `grep release /etc/redhat-release | awk '{print $4}' | cut -d. -f1` )
   elif [ -e /etc/debian_version ]; then
       if ( ! which lsb_release >/dev/null ); then
           echo "  ...instalando 'lsb_release' command"
@@ -167,7 +167,7 @@ function installjboss {
 # Short-Description: Start/Stop JBoss AS v7.0.0
 ### END INIT INFO
 #
-JBOSS_HOME=/usr/local/jboss
+JBOSS_HOME=/servicios/jboss
 JAVA_HOME=/usr/java/jdk
 export JAVA_HOME
 export JBOSS_HOME
