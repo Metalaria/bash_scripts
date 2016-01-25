@@ -75,24 +75,27 @@ function parsecommandline {
   INSTALLTARGET=${INSTALLTARGET:-$DEFAULTINSTALLTARGET}
 
   # detecta el sistema operativo y su versión
+  
   if [ -e /etc/redhat-release ]; then
       DISTRO=( `grep release /etc/redhat-release | awk '{print $1}'` )
       RELEASE=( `grep release /etc/redhat-release | awk '{print $4}' | cut -d. -f1` )
+elif [ -e /etc/susehelp.d/ ]; then
+      DISTRO=`lsb_release -is | awk '{print $1}'`
+      RELEASE=`lsb_release -rs`
   elif [ -e /etc/debian_version ]; then
       if ( ! which lsb_release >/dev/null ); then
           echo "  ...instalando 'lsb_release' command"
           apt-get -y -qq install lsb-release  >> /dev/null 2>&1
           if [[ $? -ne 0 ]]; then echo "Error: installing lsb_release package failed"; exit 1; fi
       fi
-
-   if [ -e /etc/susehelp.d/ ]; then
-		Distro=(`lsb_release -is | awk '{print $1}'`)
-		RELEASE=(`lsb_release -rs`)
-   fi
+  # elif [ -e /etc/susehelp.d/ ]; then
+   #     DISTRO=`lsb_release -is | awk '{print $1}'`
+   #     RELEASE=`lsb_release -rs`
+   #fi
       DISTRO=$( lsb_release -is )
       RELEASE=$( lsb_release -rs )
   else
-      echo "No se reconoce la distro , es posible que algunas funciones no funcionen"
+      echo "No se reconoce la distro , es posible que algunas funciones no funcionen" "$DISTRO"
   fi
   [[ -z "$DISTRO" ]] && echo "! Warning: No se ha detectado la distro"
   [[ -z "$RELEASE" ]] && echo "! Warning: No se ha identificado la versión"
@@ -235,10 +238,10 @@ INITSCRIPTEOF
   wget --quiet -O - "$JBOSSURL" | tar xz
   if [ $? -ne 0 ]; then ERRORMSG="fallo en la descarga o al descomprimir el paquete"; return 1; fi
 #  mv "$installtop"/jboss-as-7* "$INSTALLTARGET"
-  rsync -a "$installtop"/jboss-as-7* "$INSTALLTARGET"
-  rm -rf "$installtop"/jboss-as-7*
-  mv "$INSTALLTARGET"/jboss-as-7.1.1.Final/* .."$INSTALLTARGET"
-  rm -rf "$INSTALLTARGET"/jboss-as-7.1.1.Final/
+   rsync -a "$installtop"/jboss-as-7* "$INSTALLTARGET" 
+   rm -rf "$installtop"/jboss-as-7* 
+   mv "$INSTALLTARGET"/jboss-as-7.1.1.Final/* .."$INSTALLTARGET"
+   rm -rf "$INSTALLTARGET"/jboss-as-7.1.1.Final/
 
  echo
 
@@ -253,9 +256,9 @@ INITSCRIPTEOF
     elif [[$DISTRO == "SUSE"]]; then
 	  groupadd -r -f jboss  >> /dev/null 2>&1
       useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1 
-	fi
-	else
-      echo "Warning: Distro no reconocida"
+    #fi
+    else
+      echo "Warning: Distro no reconocida" "$DISTRO"
       groupadd jboss  >> /dev/null 2>&1
       useradd -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
     fi
