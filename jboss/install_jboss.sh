@@ -235,9 +235,10 @@ INITSCRIPTEOF
   wget --quiet -O - "$JBOSSURL" | tar xz
   if [ $? -ne 0 ]; then ERRORMSG="fallo en la descarga o al descomprimir el paquete"; return 1; fi
 #  mv "$installtop"/jboss-as-7* "$INSTALLTARGET"
-   rsync -a "$installtop"/jboss-as-7* "$INSTALLTARGET" 
-   rm -rf "$installtop"/jboss-as-7* 
-   mv "$installtop"/jboss-as-7* jboss
+  rsync -a "$installtop"/jboss-as-7* "$INSTALLTARGET"
+  rm -rf "$installtop"/jboss-as-7*
+  mv "$INSTALLTARGET"/jboss-as-7.1.1.Final/* .."$INSTALLTARGET"
+  rm -rf "$INSTALLTARGET"/jboss-as-7.1.1.Final/
 
  echo
 
