@@ -170,57 +170,37 @@ function installjboss {
   echo <<INITSCRIPTEOF >$INITSCRIPT '
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides: jboss
-# Required-Start: $local_fs $remote_fs $network $syslog
-# Required-Stop: $local_fs $remote_fs $network $syslog
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
+# Reference: http://stackoverflow.com/questions/6880902/start-jboss-7-as-a-service-on-linux
+# Provides:          jboss
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # Short-Description: Start/Stop JBoss AS v7.0.0
 ### END INIT INFO
 #
-JBOSS_HOME=/servicios/jboss
-JAVA_HOME=/usr/java/jdk
-export JAVA_HOME
-export JBOSS_HOME
-EXEC=${JBOSS_HOME}/bin/standalone.sh
-if [ -e /etc/redhat-release ]; then
-	. /etc/init.d/functions
-fi
-do_start(){
-	if [ -e /etc/redhat-release ]; then
-		daemon --user jboss ${EXEC} > /dev/null 2> /dev/null &
-	else
-		start-stop-daemon --start --chuid jboss --user jboss --name jboss -b --exec ${EXEC}
-	fi
-}
-do_stop(){
-	if [ -e /etc/redhat-release ]; then
-		killall -u jboss
-	else
-		start-stop-daemon --stop -u jboss
-	fi
-	rm -f ${PIDFILE}
-}
+#source some script files in order to set and export environmental variables
+#as well as add the appropriate executables to $PATH
+#[ -r /etc/profile.d/java.sh ] && . /etc/profile.d/java.sh
+#[ -r /etc/profile.d/jboss.sh ] && . /etc/profile.d/jboss.sh
+
+export JBOSS_HOME=/servicios/jboss/
+
 case "$1" in
     start)
-        echo "Starting JBoss AS"
-	do_start
+        echo "Starting JBoss AS 7.0.0"
+        sudo -u jboss sh ${JBOSS_HOME}/bin/standalone.sh > /dev/null 2>&1 &
     ;;
     stop)
-        echo "Stopping JBoss AS"
-	do_stop
-    ;;
-    restart)
-	echo "Restarting JBoss AS"
-	do_stop
-	sleep 10
-	do_start
+        echo "Stopping JBoss AS 7.0.0"
+        sudo -u jboss sh ${JBOSS_HOME}/bin/jboss-admin.sh --connect command=:shutdown > /dev/null 2>&1 &
     ;;
     *)
-        echo "uso: /etc/init.d/jboss {start|stop|restart}"
+        echo "Usage: /etc/init.d/jboss {start|stop}"
         exit 1
     ;;
 esac
+
 exit 0
 '
 INITSCRIPTEOF
