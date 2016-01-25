@@ -1,12 +1,15 @@
 #!/bin/bash
 
+# Copyright Rimuhosting.com
+
+# Modificado por Gonzalo Mejías Moreno
 
 DEFAULTINSTALLTARGET="/servicios/jboss"
 INSTALLTARGET=
 INITSCRIPT="/etc/init.d/jboss"
 JBOSSURL="http://download.jboss.org/jbossas/7.1/jboss-as-7.1.1.Final/jboss-as-7.1.1.Final.tar.gz"
+#MYSQLCONNECTORURL="http://d.ri.mu/mysql-connector-java-5.1.18-bin.jar"
 MYSQLCONNECTORURL="https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.38.tar.gz"
-
 # Valores por defecto
 ERRORMSG=
 MVDIRSTAMP="old.$(date +%s)"
@@ -81,6 +84,11 @@ function parsecommandline {
           apt-get -y -qq install lsb-release  >> /dev/null 2>&1
           if [[ $? -ne 0 ]]; then echo "Error: installing lsb_release package failed"; exit 1; fi
       fi
+
+   if [ -e /etc/susehelp.d/ ]; then
+		Distro=(`lsb_release -is | awk '{print $1}'`)
+		RELEASE=(`lsb_release -rs`)
+   fi
       DISTRO=$( lsb_release -is )
       RELEASE=$( lsb_release -rs )
   else
@@ -167,7 +175,7 @@ function installjboss {
 # Short-Description: Start/Stop JBoss AS v7.0.0
 ### END INIT INFO
 #
-JBOSS_HOME=/servicios/jboss
+JBOSS_HOME=/usr/local/jboss
 JAVA_HOME=/usr/java/jdk
 export JAVA_HOME
 export JBOSS_HOME
@@ -227,8 +235,9 @@ INITSCRIPTEOF
   wget --quiet -O - "$JBOSSURL" | tar xz
   if [ $? -ne 0 ]; then ERRORMSG="fallo en la descarga o al descomprimir el paquete"; return 1; fi
 #  mv "$installtop"/jboss-as-7* "$INSTALLTARGET"
-   rsync -aP "$installtop"/jboss-as-7* "$INSTALLTARGET" 
-   rm -rf "$installtop"/jboss-as-7*   
+   rsync -a "$installtop"/jboss-as-7* "$INSTALLTARGET" 
+   rm -rf "$installtop"/jboss-as-7* 
+   mv "$installtop"/jboss-as-7* jboss
 
  echo
 
@@ -239,8 +248,12 @@ INITSCRIPTEOF
       adduser --system --group jboss --home $INSTALLTARGET >> /dev/null 2>&1
     elif [[ $DISTRO == "CentOS" || $DISTRO == "RHEL" || $DISTRO == "Fedora" ]]; then
       groupadd -r -f jboss  >> /dev/null 2>&1
-      useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
-    else
+      useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1 
+    elif [[$DISTRO == "SUSE"]]; then
+	  groupadd -r -f jboss  >> /dev/null 2>&1
+      useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1 
+	fi
+	else
       echo "Warning: Distro no reconocida"
       groupadd jboss  >> /dev/null 2>&1
       useradd -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
