@@ -255,7 +255,7 @@ INITSCRIPTEOF
   chgrp -R -R jboss $INSTALLTARGET
 
   # configuración de logs
-  # configura el servicio para que se inicie en el arranque de la máquina si se quieres
+  # configura el servicio para que se inicie en el arranque de la máquina si se quiere
 
     if [ -z "$NOPROMPT" ] && [ $RUNONSTARTUP = "n"  ]; then
       echo -n "  Hacer que jboss se inicie en el arranque de la máquina? [y/n] "
