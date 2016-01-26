@@ -501,7 +501,7 @@ sleep 5
 #fi
 
 check_status() {
-	local resultado_grep=$(systemctl status jboss | grep -c running)
+	local resultado_grep=$(systemctl status jboss | grep -c active)
         local timestamp=`date "+%D || %H:%M:%S :"`
         if [ "$resultado_grep" = "1" ]; then
                 echo $timestamp "INFO: El servidor jboss ha sido configurado correctamente"
