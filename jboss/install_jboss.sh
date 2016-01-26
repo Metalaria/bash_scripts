@@ -8,7 +8,6 @@ DEFAULTINSTALLTARGET="/servicios/jboss"
 INSTALLTARGET=
 INITSCRIPT="/etc/init.d/jboss"
 JBOSSURL="http://download.jboss.org/jbossas/7.1/jboss-as-7.1.1.Final/jboss-as-7.1.1.Final.tar.gz"
-#MYSQLCONNECTORURL="http://d.ri.mu/mysql-connector-java-5.1.18-bin.jar"
 MYSQLCONNECTORURL="https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.38.tar.gz"
 # Valores por defecto
 ERRORMSG=
@@ -74,12 +73,11 @@ function parsecommandline {
 
   INSTALLTARGET=${INSTALLTARGET:-$DEFAULTINSTALLTARGET}
 
-  # detecta el sistema operativo y su versión
-  
+  # detecta el sistema operativo y su versión 
   if [ -e /etc/redhat-release ]; then
       DISTRO=( `grep release /etc/redhat-release | awk '{print $1}'` )
       RELEASE=( `grep release /etc/redhat-release | awk '{print $4}' | cut -d. -f1` )
-elif [ -e /etc/susehelp.d/ ]; then
+  elif [ -e /etc/susehelp.d/ ]; then
       DISTRO=`lsb_release -is | awk '{print $1}'`
       RELEASE=`lsb_release -rs`
   elif [ -e /etc/debian_version ]; then
@@ -202,7 +200,6 @@ case "$1" in
 esac
 
 exit 0
-'
 INITSCRIPTEOF
 
   chmod +x $INITSCRIPT
@@ -215,7 +212,7 @@ INITSCRIPTEOF
   echo "  ...Instalando el paquete de jboss en $INSTALLTARGET"
   installtop=$(dirname $INSTALLTARGET)
   cd $installtop
-  wget --quiet -O - "$JBOSSURL" | tar xz
+  wget -O - "$JBOSSURL" | tar xz
   if [ $? -ne 0 ]; then ERRORMSG="fallo en la descarga o al descomprimir el paquete"; return 1; fi
 #  mv "$installtop"/jboss-as-7* "$INSTALLTARGET"
    rsync -a "$installtop"/jboss-as-7* "$INSTALLTARGET" 
@@ -282,7 +279,7 @@ function installmysqlconnector {
     local MYSQLCONNECTORTARGETDIR="$INSTALLTARGET/modules/com/mysql/main"
     mkdir -p $MYSQLCONNECTORTARGETDIR
     cd $MYSQLCONNECTORTARGETDIR
-    wget --quiet $MYSQLCONNECTORURL | tar xz
+    wget -O $MYSQLCONNECTORURL | tar xz
     echo <<EOFMODULE >$MYSQLCONNECTORTARGETDIR/module.xml '
 <?xml version="1.0" encoding="UTF-8"?>
  
@@ -377,8 +374,6 @@ fi
 if [ "$MYSQLCONNECTOR" = "y" ]; then
 installmysqlconnector
 fi
- 
-
 
 echo -n "* Comprobamos que el servicio está corriendo"
 $INITSCRIPT restart >> /dev/null 2>&1
