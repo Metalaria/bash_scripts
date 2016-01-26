@@ -491,14 +491,6 @@ fi
 echo -n "* Comprobamos que el servicio está corriendo"
 $INITSCRIPT restart >> /dev/null 2>&1
 sleep 5
-#if [ "$(ps aux | grep -c "^jboss")" -eq "0" ] ; then
-#  echo "failed"
-#  echo "! Error: jboss no ha arracado correctamente"
-#else
-#  echo "ok"
-#  echo "* JBoss jboss instalado correctamente http://127.0.0.1:8080"
-#  echo 
-#fi
 
 check_status() {
 	local resultado_grep=$(systemctl status jboss | grep -c active)
@@ -510,6 +502,8 @@ check_status() {
                 systemctl status jboss
         fi
 }
+
+check_status
 
 exit 0
 # EOF
