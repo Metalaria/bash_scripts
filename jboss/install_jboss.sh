@@ -92,7 +92,7 @@ elif [ -e /etc/susehelp.d/ ]; then
    #     RELEASE=`lsb_release -rs`
    #fi
       DISTRO=$( lsb_release -is )
-      RELEASE=$( lsb_release -rs )
+      RELEASE=$( lsb_release -rs | cut -d. -f1)
   else
       echo "No se reconoce la distro , es posible que algunas funciones no funcionen" "$DISTRO"
   fi
