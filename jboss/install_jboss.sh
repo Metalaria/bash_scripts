@@ -493,14 +493,24 @@ $INITSCRIPT restart >> /dev/null 2>&1
 sleep 5
 
 check_status() {
-	local resultado_grep=$(systemctl status jboss | grep -c active)
-        local timestamp=`date "+%D || %H:%M:%S :"`
-        if [ "$resultado_grep" = "1" ]; then
-                echo $timestamp "INFO: El servidor jboss ha sido configurado correctamente"
+	local timestamp=`date "+%D || %H:%M:%S :"`
+	init_process=$(cat /proc/1/comm)	
+	if [[ $init_process == "systemd" ]]; then
+		local resultado_grep=$(systemctl status apache2.service | grep -c running)
+		if [ "$resultado_grep" = "1" ]; then
+                echo $timestamp "INFO: El servidor JBOSS ha sido configurado correctamente"
         else
                 echo $timestamp "INFO: Ha ocurrido un fallo durate la configuración del servidor"
                 systemctl status jboss
         fi
+	elif [[ $init_process == "init" ]]; then
+		local resultado_grep=$(ps -ef | grep -c jboss)
+		if [ "$resultado_grep" = "1" ]; then
+                echo $timestamp "INFO: El servidor JBOSS ha sido configurado correctamente"
+        else
+                echo $timestamp "INFO: Ha ocurrido un fallo durate la configuración del servidor"
+        fi
+	fi
 }
 
 check_status
