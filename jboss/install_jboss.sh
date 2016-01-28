@@ -533,7 +533,7 @@ check_status() {
 	local timestamp=`date "+%D || %H:%M:%S :"`
 	init_process=$(cat /proc/1/comm)	
 	if [[ $init_process == "systemd" ]]; then
-		local resultado_grep=$(systemctl status apache2.service | grep -c active)
+		local resultado_grep=$(systemctl status apache2.service | grep -c running)
 		if [ "$resultado_grep" = "1" ]; then
                 echo $timestamp "INFO: El servidor JBOSS ha sido configurado correctamente"
         else
