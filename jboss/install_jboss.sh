@@ -428,7 +428,7 @@ function installmysqlconnector {
     mkdir -p $MYSQLCONNECTORTARGETDIR
     cd $MYSQLCONNECTORTARGETDIR
     wget "$MYSQLCONNECTORURL"
-	tar xJf mysql-connector-java*
+	tar xzf mysql-connector-java*
     echo <<EOFMODULE >$MYSQLCONNECTORTARGETDIR/module.xml '
 <?xml version="1.0" encoding="UTF-8"?>
  
