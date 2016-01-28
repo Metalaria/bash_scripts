@@ -167,23 +167,37 @@ function installjboss {
 
   #Nuevo script de inicio	
   echo <<INITSCRIPTEOF >$INITSCRIPT '
-	#!/bin/sh
+#!/bin/sh
+#
+# JBoss standalone control script
+#
+# chkconfig: - 80 20
+# description: JBoss AS Standalone
+# processname: standalone
+# pidfile: /var/run/jboss-as/jboss-as-standalone.pid
+# config: /etc/jboss-as/jboss-as.conf
+
+# Source function library.
+#. /etc/init.d/functions
+. /lib/lsb/init-functions
+
+# Load Java configuration.
+[ -r /etc/java/java.conf ] && . /etc/java/java.conf
+export JAVA_HOME
 
 # Load JBoss AS init.d configuration.
 if [ -z "$JBOSS_CONF" ]; then
-  JBOSS_CONF=/servicios/jboss/bin/init.d/jboss-as.conf
+  JBOSS_CONF="/servicios/jboss/bin/init.d/jboss-as.conf"
 fi
 
 [ -r "$JBOSS_CONF" ] && . "${JBOSS_CONF}"
+
+# Set defaults.
 
 if [ -z "$JBOSS_HOME" ]; then
   JBOSS_HOME=/servicios/jboss
 fi
 export JBOSS_HOME
-
-if [ -z "JBOSS_MODE" ]; then
-  JBOSS_MODE=standalone
-fi
 
 if [ -z "$JBOSS_PIDFILE" ]; then
   JBOSS_PIDFILE=/var/run/jboss-as/jboss-as-standalone.pid
@@ -206,15 +220,19 @@ if [ -z "$JBOSS_CONFIG" ]; then
   JBOSS_CONFIG=standalone.xml
 fi
 
-if [ -z "$JBOSS_USER" ]; then
-  JBOSS_USER=jboss
-fi
-
-JBOSS_SCRIPT=$JBOSS_HOME/bin/$JBOSS_MODE.sh
+JBOSS_SCRIPT=/servicios/jboss/bin/standalone.sh
 
 prog='jboss-as'
 
 CMD_PREFIX=''
+
+if [ ! -z "$JBOSS_USER" ]; then
+  if [ -x /etc/rc.d/init.d/functions ]; then
+    CMD_PREFIX="daemon --user $JBOSS_USER"
+  else
+    CMD_PREFIX="su - $JBOSS_USER -c"
+  fi
+fi
 
 start() {
   echo -n "Starting $prog: "
@@ -222,9 +240,9 @@ start() {
     read ppid < $JBOSS_PIDFILE
     if [ `ps --pid $ppid 2> /dev/null | grep -c $ppid 2> /dev/null` -eq '1' ]; then
       echo -n "$prog is already running"
-      echo "Failure"
+      #failure
       echo
-      return 1
+      return 1 
     else
       rm -f $JBOSS_PIDFILE
     fi
@@ -233,13 +251,16 @@ start() {
   cat /dev/null > $JBOSS_CONSOLE_LOG
 
   mkdir -p $(dirname $JBOSS_PIDFILE)
-  #echo "chown -R /servicios/jboss"
-  #chown jboss -R /servicios/jboss || true
+  chown $JBOSS_USER $(dirname $JBOSS_PIDFILE) || true
   #$CMD_PREFIX JBOSS_PIDFILE=$JBOSS_PIDFILE $JBOSS_SCRIPT 2>&1 > $JBOSS_CONSOLE_LOG &
   #$CMD_PREFIX JBOSS_PIDFILE=$JBOSS_PIDFILE $JBOSS_SCRIPT &
 
   if [ ! -z "$JBOSS_USER" ]; then
-      su $JBOSS_USER  LAUNCH_JBOSS_IN_BACKGROUND=1 JBOSS_PIDFILE=$JBOSS_PIDFILE $JBOSS_SCRIPT  $JBOSS_CONFIG 2>&1 > $JBOSS_CONSOLE_LOG &
+    if [ -x /etc/rc.d/init.d/functions ]; then
+      daemon --user $JBOSS_USER LAUNCH_JBOSS_IN_BACKGROUND=1 JBOSS_PIDFILE=$JBOSS_PIDFILE $JBOSS_SCRIPT -c $JBOSS_CONFIG 2>&1 > $JBOSS_CONSOLE_LOG &
+    else
+      su $JBOSS_USER -c "LAUNCH_JBOSS_IN_BACKGROUND=1 JBOSS_PIDFILE=$JBOSS_PIDFILE $JBOSS_SCRIPT 2>&1 > $JBOSS_CONSOLE_LOG &"
+    fi
   fi
 
   count=0
@@ -247,16 +268,16 @@ start() {
 
   until [ $count -gt $STARTUP_WAIT ]
   do
-    grep 'JBoss AS.*started in' $JBOSS_CONSOLE_LOG > /dev/null
+    grep 'JBoss AS.*started in' $JBOSS_CONSOLE_LOG > /dev/null 
     if [ $? -eq 0 ] ; then
       launched=true
       break
-    fi
+    fi 
     sleep 1
-        let count=$count+1;
+    set count=$count+1;
   done
-
-  echo "Success"
+  
+  success
   echo
   return 0
 }
@@ -267,7 +288,7 @@ stop() {
 
   if [ -f $JBOSS_PIDFILE ]; then
     read kpid < $JBOSS_PIDFILE
-    let kwait=$SHUTDOWN_WAIT
+    set kwait=$SHUTDOWN_WAIT
 
     # Try issuing SIGTERM
 
@@ -275,41 +296,53 @@ stop() {
     until [ `ps --pid $kpid 2> /dev/null | grep -c $kpid 2> /dev/null` -eq '0' ] || [ $count -gt $kwait ]
     do
       sleep 1
-      let count=$count+1;
+      set count=$count+1;
     done
 
-    if [ $count -gt $kwait ]; then
+    if [ "$count" -gt "$kwait" ]; then
       kill -9 $kpid
     fi
   fi
   rm -f $JBOSS_PIDFILE
-  echo "Success"
-  echo
+  echo "success"
+  echo ""
+}
+
+status() {
+  if [ -f $JBOSS_PIDFILE ]; then
+    read ppid < $JBOSS_PIDFILE
+    if [ `ps --pid $ppid 2> /dev/null | grep -c $ppid 2> /dev/null` -eq '1' ]; then
+      echo "$prog is running (pid $ppid)"
+      return 0
+    else
+      echo "$prog dead but pid file exists"
+      return 1
+    fi
+  fi
+  echo "$prog is not running"
+  return 3
 }
 
 case "$1" in
-start)
-echo "Starting JBoss AS7..."
-start
-;;
-stop)
-echo "Stopping JBoss AS7..."
-stop
-;;
-log)
-echo "Showing server.log..."
-tail -1000f /logs/jboss/standalone/log/server.log
-;;
-console)
-echo "Showing console.log..."
-tail -1000f ${JBOSS_CONSOLE_LOG}
-;;
-*)
-echo "Usage: /etc/init.d/jboss {start|stop|log|console}"
-exit 1
-;; esac
-exit 0
-
+  start)
+      start
+      ;;
+  stop)
+      stop
+      ;;
+  restart)
+      $0 stop
+      $0 start
+      ;;
+  status)
+      status
+      ;;
+  *)
+      ## If no parameters are given, print which are avaiable.
+      echo "Usage: $0 {start|stop|status|restart|reload}"
+      exit 1
+      ;;
+esac
 ' 
 INITSCRIPTEOF
 
@@ -338,17 +371,21 @@ INITSCRIPTEOF
     echo "  ...configurando usuario y grupo"
     if [[ $DISTRO == "Debian" || $DISTRO == "Ubuntu" ]]; then
       adduser --system --group jboss --home $INSTALLTARGET >> /dev/null 2>&1
+	  usermod -s /bin/bash jboss
     elif [[ $DISTRO == "CentOS" || $DISTRO == "RHEL" || $DISTRO == "Fedora" ]]; then
       groupadd -r -f jboss  >> /dev/null 2>&1
-      useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1 
+      useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
+	  usermod -s /bin/bash jboss
     elif [[$DISTRO == "SUSE"]]; then
 	  groupadd -r -f jboss  >> /dev/null 2>&1
       useradd -r -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1 
+	  usermod -s /bin/bash jboss
     #fi
     else
       echo "Warning: Distro no reconocida" "$DISTRO"
       groupadd jboss  >> /dev/null 2>&1
       useradd -s /sbin/nologin -d $INSTALLTARGET -g jboss jboss >> /dev/null 2>&1
+	  usermod -s /bin/bash jboss
     fi
   fi
   if [[ $(id jboss 2>&1 | grep -c "No such user") -gt 0 ]]; then
