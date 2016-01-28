@@ -393,7 +393,7 @@ INITSCRIPTEOF
     return 1
   fi
 
-  chown -R jboss $INSTALLTARGET
+  chown -R jboss:jboss $INSTALLTARGET
   chgrp -R -R jboss $INSTALLTARGET
 
   # configuración de logs
@@ -482,7 +482,7 @@ EOFMODULE
 EOFDATASOURCEHELP
    
     #Asiganmos los permisos de nuevo por si acaso
-    chown -R jboss: $INSTALLTARGET
+    chown -R jboss:jboss $INSTALLTARGET
     return 0
 }
 
