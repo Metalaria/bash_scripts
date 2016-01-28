@@ -524,30 +524,46 @@ installmysqlconnector
 fi
  
 change_logs_location(){
-	local standalone_xml_logs_search='<file relative-to="jboss.server.log.dir" path="server.log"/>'
-	local standalone_xml_logs_replace='<file path="/logs/jboss/server.log"/>'
-	
-	local domain_xml_logs_search='<file relative-to="jboss.server.log.dir" path="server.log"/>'
-	local domain_xml_logs_replace='<file path="/logs/jboss/server.log"/>'
-	
-	local jboss_init_standalone_sh_search="JBOSS_CONSOLE_LOG=/var/log/jboss-as/console.log"
-	local jboss_init_standalone_sh_replace="JBOSS_CONSOLE_LOG=/logs/jboss/console.log"
-	
-	local bin_appclient_searh='\"-Dorg.jboss.boot.log.file=$JBOSS_HOME/appclient/log/boot.log\" \'
-	local bin_appclient_replace='\"-Dorg.jboss.boot.log.file=/logs/jboss/boot.log\" \'
-	
-	local jboss_user_search="#JBOSS_USER=jboss-as"
-	local jboss_user_replace="JBOSS_USER=jboss"
-	
-	local jboss_home_search="JBOSS_HOME=/usr/share/jboss-as"
-	local jboss_home_replace="JBOSS_HOME=/servicios/jboss"
-	
-	sed -i "s|$standalone_xml_logs_search|$standalone_xml_logs_replace|g" $INSTALLTARGET/standalone/configuration/standalone.xml
-	sed -i "s|$domain_xml_logs_search|$domain_xml_logs_replace|g" $INSTALLTARGET/domain/configuration/domain.xml
-	sed -i "s|$jboss_init_standalone_sh_search|$jboss_init_standalone_sh_replace|g" $INSTALLTARGET/bin/init.d/jboss-as-standalone.sh
-	sed -i "s|$bin_appclient_searh|$bin_appclient_replace|g" $INSTALLTARGET/bin/appclient.sh
-	sed -i "s|$jboss_user_search|$jboss_user_replace|g" $INSTALLTARGET/bin/init.d/jboss-as.conf
-	sed -i "s|$jboss_home_search|$jboss_home_replace|g" $INSTALLTARGET/bin/init.d/jboss-as.conf
+    local standalone_xml_logs_search='<file relative-to="jboss.server.log.dir" path="server.log"/>'
+    local standalone_xml_logs_replace='<file path="/logs/jboss/server.log"/>'
+
+    local domain_xml_logs_search='<file relative-to="jboss.server.log.dir" path="server.log"/>'
+    local domain_xml_logs_replace='<file path="/logs/jboss/server.log"/>'
+
+    local jboss_init_standalone_sh_search="JBOSS_CONSOLE_LOG=/var/log/jboss-as/console.log"
+    local jboss_init_standalone_sh_replace="JBOSS_CONSOLE_LOG=/logs/jboss/console.log"
+
+    local bin_appclient_searh='$JBOSS_HOME/appclient/log/boot.log'
+    local bin_appclient_replace='/logs/jboss/boot.log'
+
+    local bin_appclient_logs_home_search='$JBOSS_LOG_DIR/boot.log'
+    local bin_appclient_logs_home_replace='/logs/jboss/boot.log'
+
+    local jboss_user_search="#JBOSS_USER=jboss-as"
+    local jboss_user_replace="JBOSS_USER=jboss"
+
+    local jboss_home_search="JBOSS_HOME=/usr/share/jboss-as"
+    local jboss_home_replace="JBOSS_HOME=/servicios/jboss"
+
+    local logs_dir_search='JBOSS_LOG_DIR=`readlink -m ${var#*=}`'
+    local logs_dir_replace='JBOSS_LOG_DIR=/logs/jboss'
+
+    local jboss_controller_log_search='$JBOSS_LOG_DIR/process-controller.log'
+    local jboss_controller_log_replace='/logs/jboss/process-controller.log'
+
+    local jboss_controller_log_search2='$JBOSS_LOG_DIR/host-controller.log'
+    local jboss_controller_log_replace2='/logs/jboss/process-controller.log'
+
+    sed -i "s|$standalone_xml_logs_search|$standalone_xml_logs_replace|g" $INSTALLTARGET/standalone/configuration/standalone.xml
+    sed -i "s|$domain_xml_logs_search|$domain_xml_logs_replace|g" $INSTALLTARGET/domain/configuration/domain.xml
+    sed -i "s|$jboss_init_standalone_sh_search|$jboss_init_standalone_sh_replace|g" $INSTALLTARGET/bin/init.d/jboss-as-standalone.sh
+    sed -i "s|$bin_appclient_searh|$bin_appclient_replace|g" $INSTALLTARGET/bin/appclient.sh
+    sed -i "s|$bin_appclient_logs_home_search|$bin_appclient_logs_home_replace|g" $INSTALLTARGET/bin/standalone.sh
+    sed -i "s|$bin_appclient_searh|$bin_appclient_replace|g" $INSTALLTARGET/bin/standalone.sh
+    sed -i "s|$jboss_controller_log_search|$jboss_controller_log_replace|g" $INSTALLTARGET/bin/domain.sh
+    sed -i "s|$jboss_controller_log_search2|$jboss_controller_log_replace2|g" $INSTALLTARGET/bin/domain.sh
+    sed -i "s|$jboss_user_search|$jboss_user_replace|g" $INSTALLTARGET/bin/init.d/jboss-as.conf
+    sed -i "s|$jboss_home_search|$jboss_home_replace|g" $INSTALLTARGET/bin/init.d/jboss-as.conf
 }
 
 change_logs_location
