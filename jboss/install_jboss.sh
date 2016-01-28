@@ -533,7 +533,7 @@ check_status() {
 	local timestamp=`date "+%D || %H:%M:%S :"`
 	init_process=$(cat /proc/1/comm)	
 	if [[ $init_process == "systemd" ]]; then
-		local resultado_grep=$(systemctl status apache2.service | grep -c running)
+		local resultado_grep=$(systemctl status apache2.service | grep -c active)
 		if [ "$resultado_grep" = "1" ]; then
                 echo $timestamp "INFO: El servidor JBOSS ha sido configurado correctamente"
         else
@@ -542,7 +542,7 @@ check_status() {
         fi
 	elif [[ $init_process == "init" ]]; then
 		local resultado_grep=$(ps -ef | grep -c jboss)
-		if [ "$resultado_grep" = "1" ]; then
+		if [ "$resultado_grep" = "3" ]; then
                 echo $timestamp "INFO: El servidor JBOSS ha sido configurado correctamente"
         else
                 echo $timestamp "INFO: Ha ocurrido un fallo durate la configuración del servidor"
